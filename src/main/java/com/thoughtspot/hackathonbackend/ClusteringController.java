@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -37,17 +38,19 @@ public class ClusteringController {
         CustomDataset dataset = new CustomDataset();
 
         String[] rows = data.split("\n");
-        dataset.values = Arrays.asList(rows).subList(3, rows.length);
+        List<String> rowsString = Arrays.asList(rows).subList(3, rows.length);
+        dataset.setValues(new ArrayList<>());
+        rowsString.forEach(x -> dataset.getValues().add(Arrays.asList(x.split(","))));
         String[] headers = rows[0].split(",");
         String[] colTypes = rows[1].split(",");
         String[] datatypes = rows[2].split(",");
-        dataset.columns = new ArrayList<Column>();
+        dataset.setColumns(new ArrayList<>());
         for (int i = 0; i < headers.length; i++) {
             Column column = new Column();
-            column.name = headers[i];
-            column.colType = getColumn(colTypes[i]);
-            column.dataType = getDataType(datatypes[i]);
-            dataset.columns.add(column);
+            column.setName(headers[i]);
+            column.setColType(getColumn(colTypes[i]));
+            column.setDataType(getDataType(datatypes[i]));
+            dataset.getColumns().add(column);
         }
         return dataset;
     }

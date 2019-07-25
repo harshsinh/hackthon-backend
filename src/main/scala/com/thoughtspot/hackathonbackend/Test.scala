@@ -13,6 +13,7 @@ object Test {
 
   def clusterBackend(ds: Dataset[Row], spark: SparkSession):Unit = {
     import spark.implicits._
-    println("Count inside Test class : " + ds.count());
+    println("Count inside Test class : " + ds.count())
+
   }
 }

@@ -6,7 +6,8 @@ import java.util.List;
 
 @Data
 public class ClusterDefinition {
-    public int numberOfCluster;
-    public List<Tuple> centroid;
+    int numberOfCluster;
+    List<Tuple> centroid;
+    List<Tuple> datapoints;
     // TODO capture min max etc.
 }
