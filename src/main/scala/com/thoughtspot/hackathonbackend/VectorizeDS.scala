@@ -8,10 +8,10 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.Row
 
 import scala.collection.mutable.ArrayBuffer
-//import spark.implicits._
 import scala.collection.JavaConversions._
 
 class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serializable {
+
   def setCardinalityType(ds: Dataset[Row]): Array[Int] = {
     var i = 0
     val df_col_types = Array.fill(cols.size)(-1)
@@ -70,16 +70,15 @@ class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serial
     encoded
   }
 
-  def getVectorizedRow(x : Row, eCols : Seq[String]): org.apache.spark.mllib.linalg.Vector = {
+  val getVectorizedRow = (x : Row, eCols : Seq[String]) => {
     var i = 0
     var arr = ArrayBuffer[Double]()
     while(i < eCols.size) {
-      try {
+      if(x.get(i).isInstanceOf[org.apache.spark.ml.linalg.SparseVector]) {
+        //arr.addAll(x.getAs[org.apache.spark.ml.linalg.SparseVector](i).toDense.toArray.)
         arr ++= x.getAs[org.apache.spark.ml.linalg.SparseVector](i).toDense.toArray
-      } catch {
-        case e : Exception => {
-          arr ++= Array(x.getAs[String](i).toDouble)
-        }
+      } else {
+        arr ++= Array(x.getAs[String](i).toDouble)
       }
       i += 1
     }
@@ -91,8 +90,10 @@ class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serial
     df.printSchema()
     val encoded = setEncoding(df);
     println( "Count after encoding:" + encoded.count())
-    val eCols = encoded.columns.toSeq
-    var rowDataset = encoded.rdd.map(x => getVectorizedRow(x, eCols))
+    val eCols : Seq[String] = encoded.columns.toSeq
+    val col2 = eCols.map( x => x);
+    encoded.foreach(x => println(x.length));
+    var rowDataset = encoded.rdd.map(x => getVectorizedRow(x, col2))
     val take = rowDataset.take(1)
     for (row <- take) {
       System.out.println(row.toJson)
