@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class ClusteringInput {
-    private enum ClusteringMethod {
+    public enum ClusteringMethod {
         KMEANS, DBSCAN
     }
     private ClusteringMethod clusteringMethod;

@@ -33,10 +33,10 @@ public class ClusteringController {
         return "testData";
     }
 
-    public CustomDataset getDummyRequest() throws IOException {
+    public ClusteringInput getDummyRequest() throws IOException {
         String data = FileUtils.readFileToString(new File("/Users/harsh.sinha/workspace/thoughtspot/lineorder_csv.csv"));
+        ClusteringInput clusteringInput = new ClusteringInput();
         CustomDataset dataset = new CustomDataset();
-
         String[] rows = data.split("\n");
         List<String> rowsString = Arrays.asList(rows).subList(3, rows.length);
         dataset.setValues(new ArrayList<>());
@@ -52,7 +52,8 @@ public class ClusteringController {
             column.setDataType(getDataType(datatypes[i]));
             dataset.getColumns().add(column);
         }
-        return dataset;
+        clusteringInput.setData(dataset);
+        return clusteringInput;
     }
 
     public ColumnType getColumn(String columnType) {
