@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 public class ClusteringController {
@@ -23,14 +22,12 @@ public class ClusteringController {
     @RequestMapping(method = RequestMethod.POST, path = "/clustering", produces = "application/json", consumes =  "application/json")
     public ClusterDefinition cluster(@RequestBody ClusteringInput input){
         System.out.println(input);
-        Map<String, Long> first = clusteringService.getClustering(input);
-        return null;
+        return clusteringService.getClustering(input);
     }
 
     @RequestMapping(method = RequestMethod.POST, path = "/localclustering", produces = "application/json", consumes =  "application/json")
-    public String localCluster() throws IOException {
-        Map<String, Long> first = clusteringService.getClustering(getDummyRequest());
-        return "testData";
+    public ClusterDefinition localCluster() throws IOException {
+        return clusteringService.getClustering(getDummyRequest());
     }
 
     public ClusteringInput getDummyRequest() throws IOException {
