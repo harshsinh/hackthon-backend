@@ -11,7 +11,7 @@ import scala.collection.mutable.ArrayBuffer
 //import spark.implicits._
 import scala.collection.JavaConversions._
 
-class VectorizeDS(threshold : Int, cols : java.util.List[String]) {
+class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serializable {
   def setCardinalityType(ds: Dataset[Row]): Array[Int] = {
     var i = 0
     val df_col_types = Array.fill(cols.size)(-1)
@@ -88,7 +88,9 @@ class VectorizeDS(threshold : Int, cols : java.util.List[String]) {
   }
 
   def getVectorizedDS(df : Dataset[Row]): RDD[org.apache.spark.mllib.linalg.Vector] = {
-    val encoded = setEncoding(df)
+    df.printSchema()
+    val encoded = setEncoding(df);
+    println( "Count after encoding:" + encoded.count())
     val eCols = encoded.columns.toSeq
     var rowDataset = encoded.rdd.map(x => getVectorizedRow(x, eCols))
     val take = rowDataset.take(1)
