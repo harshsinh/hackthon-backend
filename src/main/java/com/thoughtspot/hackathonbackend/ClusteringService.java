@@ -1,5 +1,6 @@
 package com.thoughtspot.hackathonbackend;
 
+import com.thoughtspot.hackathonbackend.dto.ClusteringInput;
 import com.thoughtspot.hackathonbackend.dto.Column;
 import com.thoughtspot.hackathonbackend.dto.CustomDataset;
 import org.apache.spark.api.java.JavaRDD;
@@ -25,22 +26,20 @@ public class ClusteringService {
     public Map<String, Long> getCount(List<String> wordList) {
         JavaRDD<String> words = sc.parallelize(wordList);
         Map<String, Long> wordCounts = words.countByValue();
-        Test.fun(sc);
         return wordCounts;
 
     }
 
-    public Map<String,Long> getClustering(CustomDataset customDataset) {
-        JavaRDD<Row> stringRdd = sc.parallelize(customDataset.values).map(x -> {
+    public Map<String,Long> getClustering(ClusteringInput input) {
+
+        JavaRDD<Row> stringRdd = sc.parallelize(input.getData().getValues()).map(x -> {
             return RowFactory.create(x.split(","));
         });
         SparkSession spark = SparkSession.builder().config(sc.getConf()).getOrCreate();
-        Dataset<Row> dataset = spark.createDataFrame(stringRdd, getSchema(customDataset));
+        Dataset<Row> dataset = spark.createDataFrame(stringRdd, getSchema(input.getData()));
 
         long count = dataset.count();
-
         System.out.println(count);
-        Test.clusterBackend(dataset, spark);
         return null;
     }
 

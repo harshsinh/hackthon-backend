@@ -20,9 +20,9 @@ public class ClusteringController {
     // target dimension
     // cluster algo.
     @RequestMapping(method = RequestMethod.POST, path = "/clustering", produces = "application/json", consumes =  "application/json")
-    public ClusterDefinition cluster(@RequestBody CustomDataset data){
-        System.out.println(data);
-        Map<String, Long> first = clusteringService.getCount(Arrays.asList("first"));
+    public ClusterDefinition cluster(@RequestBody ClusteringInput input){
+        System.out.println(input);
+        Map<String, Long> first = clusteringService.getClustering(input);
         return null;
     }
 
