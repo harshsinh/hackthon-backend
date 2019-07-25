@@ -1,5 +1,7 @@
 package com.thoughtspot.hackathonbackend;
 
+import com.thoughtspot.hackathonbackend.dto.ClusterDefinition;
+import com.thoughtspot.hackathonbackend.dto.ClusteringInput;
 import com.thoughtspot.hackathonbackend.dto.Column;
 import com.thoughtspot.hackathonbackend.dto.CustomDataset;
 import org.apache.spark.api.java.JavaRDD;
@@ -27,17 +29,11 @@ public class ClusteringService implements Serializable{
     @Autowired
     transient JavaSparkContext sc;
 
-    public Map<String, Long> getCount(List<String> wordList) {
-        JavaRDD<String> words = sc.parallelize(wordList);
-        Map<String, Long> wordCounts = words.countByValue();
-        Test.fun(sc);
-        return wordCounts;
+    public Map<String,Long> getClustering(ClusteringInput input) {
 
-    }
-
-    public Map<String,Long> getClustering(CustomDataset customDataset) {
-        JavaRDD<Row> stringRdd = sc.parallelize(customDataset.getValues()).map(x -> {
-            List<Column> columns = customDataset.getColumns();
+        CustomDataset data = input.getData();
+        JavaRDD<Row> stringRdd = sc.parallelize(data.getValues()).map(x -> {
+            List<Column> columns = data.getColumns();
             int i = 0;
             Object[] row = new Object[x.size()];
             for (String col : x) {
@@ -47,14 +43,11 @@ public class ClusteringService implements Serializable{
             return RowFactory.create(row);
         });
         SparkSession spark = SparkSession.builder().config(sc.getConf()).getOrCreate();
-        Dataset<Row> dataset = spark.createDataFrame(stringRdd, getSchema(customDataset));
+        Dataset<Row> dataset = spark.createDataFrame(stringRdd, getSchema(input.getData()));
 
-        long count = dataset.count();
-        System.out.println(count);
-        List<String> cols = customDataset.getColumns().stream().map(Column::getName).collect(Collectors.toList());
-        VectorizeDS vectorHelper = new VectorizeDS(50, cols);
-        vectorHelper.getVectorizedDS(dataset);
-        return null;
+        return ClusteringManager.start(dataset, input.getClusteringMethod(),
+                input.getTargetDims(), input.getNumClusters(),
+                input.getNumIters(), input.getDimsThreshold());
     }
 
     public StructType getSchema(CustomDataset  customDataset) {
