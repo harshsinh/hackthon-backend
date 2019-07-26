@@ -20,18 +20,49 @@ public class ClusteringController {
     // target dimension
     // cluster algo.
     @RequestMapping(method = RequestMethod.POST, path = "/clustering", produces = "application/json", consumes =  "application/json")
-    public ClusterDefinition cluster(@RequestBody ClusteringInput input){
-        System.out.println(input);
+    public ClusterDefinition cluster(@RequestBody ClusteringInput input) throws IOException {
+        ClusterDefinition cd = clusteringService.getClustering(input);
+        System.out.println("Cluster Definition " + cd.toString());
         return clusteringService.getClustering(input);
     }
 
+    @RequestMapping(method = RequestMethod.POST, path = "/abcd", produces = "application/json", consumes =  "application/json")
+    public ClusterDefinition cluster2(@RequestBody CustomDataset data) {
+        System.out.println(data);
+
+        List<Tuple> tuples = new ArrayList<>();
+        int i = 0;
+        for (String str : TempDS.values) {
+            String[] split = str.split(";");
+            Integer cluster = (int) Math.round(Double.parseDouble(split[0]));
+            String[] coordinateSplit = split[1].split(",");
+            Double x = Double.parseDouble(coordinateSplit[0]) / 1000000;
+            Double y = Double.parseDouble(coordinateSplit[1]) / 1000000;
+            Double z = Double.parseDouble(coordinateSplit[2]) / 1000000;
+
+            tuples.add(Tuple.builder()
+                    .clusterId(cluster)
+                    .coordinates(Arrays.asList(x, y, z))
+                    .originalValues(Arrays.asList("x" + i, "y" + i, "z" + i))
+                    .build());
+        }
+
+        ClusterDefinition cf = ClusterDefinition.builder()
+                .numberOfCluster(5)
+                .centroid(tuples)
+                .datapoints(tuples)
+                .build();
+        return cf;
+    }
+
     @RequestMapping(method = RequestMethod.POST, path = "/localclustering", produces = "application/json", consumes =  "application/json")
-    public ClusterDefinition localCluster() throws IOException {
-        return clusteringService.getClustering(getDummyRequest());
+    public String localCluster() throws IOException {
+        //Map<String, Long> first = clusteringService.getClustering(getDummyRequest());
+        return "testData";
     }
 
     public ClusteringInput getDummyRequest() throws IOException {
-        String data = FileUtils.readFileToString(new File("/Users/harsh.sinha/workspace/thoughtspot/lineorder_csv.csv"));
+        String data = FileUtils.readFileToString(new File("/Users/vikas.singh/Downloads/lineorder_csv.csv"));
         ClusteringInput clusteringInput = new ClusteringInput();
         CustomDataset dataset = new CustomDataset();
         String[] rows = data.split("\n");
