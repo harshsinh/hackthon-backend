@@ -50,6 +50,10 @@ public class ClusteringController {
             dataset.getColumns().add(column);
         }
         clusteringInput.setData(dataset);
+        clusteringInput.setClusteringMethod(ClusteringInput.ClusteringMethod.KMEANS);
+        clusteringInput.setDimsThreshold(50);
+        clusteringInput.setNumClusters(2);
+        clusteringInput.setTargetDims(3);
         return clusteringInput;
     }
 

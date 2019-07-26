@@ -1,22 +1,30 @@
 package com.thoughtspot.hackathonbackend;
 
-import com.thoughtspot.hackathonbackend.dto.ClusterDefinition;
-import com.thoughtspot.hackathonbackend.dto.ClusteringInput;
+import com.thoughtspot.hackathonbackend.ClusteringAlgorithm.KMeansClustering;
+import com.thoughtspot.hackathonbackend.DimensionReduction.PCAAlgorithm;
+import com.thoughtspot.hackathonbackend.dto.*;
 import com.thoughtspot.hackathonbackend.dto.ClusteringInput.*;
-import com.thoughtspot.hackathonbackend.dto.Column;
-import com.thoughtspot.hackathonbackend.dto.CustomDataset;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.regression.LabeledPoint$;
+import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.*;
+import org.apache.spark.sql.types.DataType;
+import org.spark_project.guava.primitives.Doubles;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ClusteringManager {
+public class ClusteringManager implements Serializable {
 
     public ClusteringManager (JavaSparkContext sc) {
         sc_ = sc;
@@ -57,10 +65,39 @@ public class ClusteringManager {
 
     public ClusterDefinition createClusters () {
 
-        VectorizeDS vectorHelper = new VectorizeDS(50, cols_);
-        vectorHelper.getVectorizedDS(df_);
+        VectorizeDS vectorHelper = new VectorizeDS(thres_, cols_);
+        JavaRDD<Vector> vectorizedDS = vectorHelper.getVectorizedDS(df_);
 
-        return new ClusterDefinition(); // placeholder
+        RDD<LabeledPoint> clusteredPts;
+        System.out.println(meth_.toString());
+        switch (meth_) {
+            case KMEANS: clusteredPts = KMeansClustering.kmeansImp(vectorizedDS.rdd(), numC_, numI_); break;
+            default: clusteredPts = KMeansClustering.kmeansImp(vectorizedDS.rdd(), numC_, numI_);
+        }
+
+//        LabeledPoint[] clusteredCollected = clusteredPts.take(((int) clusteredPts.count()));
+
+        List<LabeledPoint> clusteredCollected = clusteredPts.toJavaRDD().collect();
+
+        RDD<LabeledPoint> clusteredPtsPCA = PCAAlgorithm.applyPCA(tarD_, clusteredPts);
+        ClusterDefinition clusterDefinition = new ClusterDefinition();
+        clusterDefinition.setNumberOfCluster(numC_);
+
+        List<LabeledPoint> clusteredPtsPCAJ = clusteredPtsPCA.toJavaRDD().collect();
+
+        List<Tuple> dataPoints = new ArrayList<Tuple>();
+        int i=0;
+        for (LabeledPoint lp : clusteredPtsPCAJ) {
+            Tuple temp = new Tuple();
+            temp.setClusterId(((int) lp.label()));
+            temp.setDimenstion(tarD_);
+            temp.setOriginalValues(Arrays.asList(clusteredCollected.get(i).features().toString().split(",")));
+            temp.setCoordinates(Doubles.asList(lp.features().toArray()));
+            dataPoints.add(temp);
+            i++;
+        }
+        clusterDefinition.setDatapoints(dataPoints);
+        return clusterDefinition;
     }
 
     private StructType getSchema(CustomDataset  customDataset) {
@@ -91,7 +128,7 @@ public class ClusteringManager {
 
     private Dataset<Row> df_;
     private List<String> cols_;
-    private JavaSparkContext sc_;
+    private static JavaSparkContext sc_;
     private int numC_, numI_, thres_, tarD_;
     private ClusteringMethod meth_;
 }

@@ -1,11 +1,10 @@
 package com.thoughtspot.hackathonbackend
 
+import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.ml.feature.{OneHotEncoder, StringIndexer}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
@@ -43,14 +42,14 @@ class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serial
     df_col_types
   }
 
-  def setEncoding(df : Dataset[Row]): Dataset[Row] = {
+  def setEncoding(df : DataFrame): DataFrame = {
     var encoded = df
     var col =  cols.size - 1
     var j = 0
     val df_col_types = setCardinalityType(df)
     while (j <= col) {
       if  (df_col_types(j) == 1) {
-        println(j)
+//        println(j)
         val indexer = new StringIndexer()
           .setInputCol(cols(j))
           .setOutputCol(cols(j)+"Index")
@@ -78,7 +77,7 @@ class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serial
         //arr.addAll(x.getAs[org.apache.spark.ml.linalg.SparseVector](i).toDense.toArray.)
         arr ++= x.getAs[org.apache.spark.ml.linalg.SparseVector](i).toDense.toArray
       } else {
-        arr ++= Array(x.getAs[String](i).toDouble)
+        arr ++= Array(x.getAs[Int](i).toDouble)
       }
       i += 1
     }
@@ -86,18 +85,19 @@ class VectorizeDS(threshold : Int, cols : java.util.List[String]) extends Serial
 
   }
 
-  def getVectorizedDS(df : Dataset[Row]): RDD[org.apache.spark.mllib.linalg.Vector] = {
+  def getVectorizedDS(df : DataFrame): JavaRDD[org.apache.spark.mllib.linalg.Vector] = {
+//    val ds:Dataset[Row] = df.as[Row]
     df.printSchema()
     val encoded = setEncoding(df);
     println( "Count after encoding:" + encoded.count())
     val eCols : Seq[String] = encoded.columns.toSeq
-    val col2 = eCols.map( x => x);
-    encoded.foreach(x => println(x.length));
-    var rowDataset = encoded.rdd.map(x => getVectorizedRow(x, col2))
-    val take = rowDataset.take(1)
-    for (row <- take) {
-      System.out.println(row.toJson)
-    }
-    rowDataset
+//    val col2 = eCols.map( x => x);
+//    encoded.foreach(x => println(x.length));
+    var rowDataset = encoded.rdd.map(x => getVectorizedRow(x, eCols))
+//    val take = rowDataset.take(1)
+//    for (row <- take) {
+//      System.out.println(row.toJson)
+//    }
+    rowDataset.toJavaRDD()
   }
 }
