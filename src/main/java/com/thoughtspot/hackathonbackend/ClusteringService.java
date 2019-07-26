@@ -16,12 +16,9 @@ import org.apache.spark.sql.types.*;
 import org.apache.spark.sql.types.DataType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.apache.spark.mllib.linalg.Vector;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class ClusteringService implements Serializable{
@@ -29,7 +26,7 @@ public class ClusteringService implements Serializable{
     @Autowired
     transient JavaSparkContext sc;
 
-    public Map<String,Long> getClustering(ClusteringInput input) {
+    public ClusterDefinition getClustering(ClusteringInput input) {
 
         CustomDataset data = input.getData();
         JavaRDD<Row> stringRdd = sc.parallelize(data.getValues()).map(x -> {
@@ -43,11 +40,9 @@ public class ClusteringService implements Serializable{
             return RowFactory.create(row);
         });
         SparkSession spark = SparkSession.builder().config(sc.getConf()).getOrCreate();
-        Dataset<Row> dataset = spark.createDataFrame(stringRdd, getSchema(input.getData()));
+        Dataset dataset = spark.createDataFrame(stringRdd, getSchema(input.getData()));
 
-        return ClusteringManager.start(dataset, input.getClusteringMethod(),
-                input.getTargetDims(), input.getNumClusters(),
-                input.getNumIters(), input.getDimsThreshold());
+        return PipelineX.createClusters(dataset, input.getDimsThreshold(), createDataCols(input), input.getTargetDims());
     }
 
     public StructType getSchema(CustomDataset  customDataset) {
@@ -65,6 +60,10 @@ public class ClusteringService implements Serializable{
             i++;
         }
         return new StructType(fields);
+    }
+
+    public List<String> createDataCols (ClusteringInput input) {
+        return input.getData().getColumns().stream().map(Column::getName).collect(Collectors.toList());
     }
 
     public Object getDatatype(String colValue, com.thoughtspot.hackathonbackend.dto.DataType type) {
